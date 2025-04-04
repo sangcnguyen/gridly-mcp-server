@@ -110,6 +110,30 @@ const CreateColumnSchema = z.object({
   type: typeEnum.describe("Please provide the column type"),
 });
 
+const cellSchema = z.object({
+  columnId: z.string().describe("ID of a column in a view"),
+  value: z.string().describe("Value of a cell"),
+});
+
+const recordSchema = z.object({
+  id: z
+    .string()
+    .optional()
+    .describe("This parameter specify record Id of this record"),
+  path: z
+    .string()
+    .optional()
+    .describe(
+      "This parameter specify path (folder) of this record. Use character / to indicate folder level (e.g Path Level 1/Path Level 2)"
+    ),
+  cells: z.array(cellSchema),
+});
+
+const AddRecordsSchema = z.object({
+  ...ViewIdSchema.shape,
+  records: z.array(recordSchema),
+});
+
 async function getProjects() {
   const response = await fetch(`${API_BASE}/projects`, {
     method: "GET",
@@ -336,6 +360,19 @@ async function deleteDependency(args: z.infer<typeof ViewDependencySchema>) {
   }
 }
 
+async function addRecords(args: z.infer<typeof AddRecordsSchema>) {
+  const { viewId, records } = AddRecordsSchema.parse(args);
+  const response = await fetch(`${API_BASE}/views/${viewId}/records`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `ApiKey ${API_KEY}`,
+    },
+    body: JSON.stringify(records),
+  });
+  return response.json();
+}
+
 const server = new Server(
   {
     name: "gridly-mcp-server",
@@ -430,6 +467,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "delete_dependency",
         description: "Delete a dependency",
         inputSchema: zodToJsonSchema(ViewDependencySchema),
+      },
+      {
+        name: "add_records",
+        description: "Add new records to a view",
+        inputSchema: zodToJsonSchema(AddRecordsSchema),
       },
     ],
   };
@@ -611,6 +653,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: success
                 ? "Dependency successfully deleted."
                 : "Failed to delete dependency.",
+            },
+          ],
+        };
+      }
+
+      case "add_records": {
+        const args = AddRecordsSchema.parse(request.params.arguments);
+        const records = await addRecords(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(records, null, 2),
             },
           ],
         };

@@ -23,8 +23,7 @@ MCP Server for the Gridly API offers functionality for managing projects, grids,
 }
 ```
 
-## API
-### Tools
+## Available Operations
 #### Project
 - `list_projects`: List grids of a database
 - `retrieve_project`: Retrieve a project
@@ -47,3 +46,5 @@ MCP Server for the Gridly API offers functionality for managing projects, grids,
 - `list_dependencies`: List dependencies
 - `retrieve_dependency`: Retrieve a dependency
 - `delete_dependency`: Delete a dependency
+#### Record
+- `add_records`: Add new records to a view
