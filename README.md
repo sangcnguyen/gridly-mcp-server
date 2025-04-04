@@ -1,20 +1,19 @@
 # Gridly MCP Server
-MCP Server for the Gridly API offers functionality for managing projects, grids, databases, and more.
+MCP Server for Gridly API offers functionality for managing projects, grids, databases, and more.
+## Requirements
+1. Install [Nodejs](https://nodejs.org/en) (version 18 or higher)
+2. Install [Claude Desktop](https://claude.ai/download)
+3. Obtain Gridly API Key
 ## Installation
-1. Clone the repository
-`git clone git@github.com:sangcnguyen/gridly-mcp-server.git`.
-
-2. Install dependencies `npm install`.
-
-3. Build the server `npm run build`. Notice the `index.js` file in the build folder. Please copy its absolute path and paste it into Step 4 under args.
-
-4. Open [Developer in Claude](https://modelcontextprotocol.io/quickstart/user) & edit claude_desktop_config.json (in case you don't have [Claude desktop](https://claude.ai/download), please download it first )
-```
+### Method 1: Using npx (Recommended)
+1. Open Claude Desktop app > Settings > Developer > Edit Config
+2. Edit claude_desktop_config.json with the following config:
+```json
 {
   "mcpServers": {
     "gridly-server": {
-      "command": "node",
-      "args": ["path/to/build/folder/index.js"],
+      "command": "npx",
+      "args": ["-y", "gridly-mcp-server"],
       "env": {
         "GRIDLY_API_KEY": "your_api_key_here"
       }
@@ -22,8 +21,28 @@ MCP Server for the Gridly API offers functionality for managing projects, grids,
   }
 }
 ```
+### Method 2: Development installation (For Developer)
+1. Clone the repository
+`git clone git@github.com:sangcnguyen/gridly-mcp-server.git`.
 
-## Available Operations
+1. Install dependencies `npm install`
+2. Build the server `npm run build`. Notice the `index.js` file in the `dist` folder. Please copy its absolute path and paste it into Step 4 under args
+3. Open Claude Desktop app > Settings > Developer > Edit Config
+4. Edit claude_desktop_config.json with the following config:
+```json
+{
+  "mcpServers": {
+    "gridly-server": {
+      "command": "node",
+      "args": ["path/to/dist/folder/index.js"],
+      "env": {
+        "GRIDLY_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
+## Available Tools
 #### Project
 - `list_projects`: List grids of a database
 - `retrieve_project`: Retrieve a project
@@ -48,3 +67,4 @@ MCP Server for the Gridly API offers functionality for managing projects, grids,
 - `delete_dependency`: Delete a dependency
 #### Record
 - `add_records`: Add new records to a view
+- `delete_records`: Delete existing records of a view
