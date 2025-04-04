@@ -2,22 +2,22 @@
 MCP Server for the Gridly API offers functionality for managing projects, grids, databases, and more.
 ## Installation
 1. Clone the repository
-`git clone git@github.com:sangcnguyen/gridly-mcp-server.git`
+`git clone git@github.com:sangcnguyen/gridly-mcp-server.git`.
 
-2. Install dependencies `npm install`
+2. Install dependencies `npm install`.
 
-3. Build the server `npm run build`
+3. Build the server `npm run build`. Notice the `index.js` file in the build folder. Please copy its absolute path and paste it into Step 4 under args.
 
-
-4. Edit claude_desktop_config.json
+4. Open [Developer in Claude](https://modelcontextprotocol.io/quickstart/user) & edit claude_desktop_config.json (in case you don't have [Claude desktop](https://claude.ai/download), please download it first )
 ```
 {
-  "gridly-server": {
-    "command": "node",
-    "args": ["path/to/gridly/index.js"],
-    "disabled": false,
-    "env": {
-      "GRIDLY_API_KEY": "your_api_key_here"
+  "mcpServers": {
+    "gridly-server": {
+      "command": "node",
+      "args": ["path/to/build/folder/index.js"],
+      "env": {
+        "GRIDLY_API_KEY": "your_api_key_here"
+      }
     }
   }
 }
