@@ -1,15 +1,28 @@
 {
-  "name": "gridly-mcp",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "gridly-mcp-server",
+  "version": "0.2.6",
+  "description": "MCP server for Gridly API integration",
+  "bugs": "https://github.com/sangcnguyen/gridly-mcp-server/issues",
+  "main": "disk/index.js",
   "scripts": {
-    "build": "tsc && shx chmod +x build/*.js"
+    "build": "tsc && shx chmod +x disk/*.js",
+    "inspector": "npx @modelcontextprotocol/inspector dist/index.js"
   },
-  "keywords": [],
+  "keywords": [
+    "ai",
+    "gridly",
+    "mcp",
+    "modelcontextprotocol"
+  ],
   "author": "Sang Nguyen",
+  "bin": {
+    "gridly-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.8.0",
     "zod": "^3.24.2",
@@ -19,5 +32,8 @@
     "@types/node": "^22.14.0",
     "shx": "^0.4.0",
     "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

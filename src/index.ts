@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -12,6 +13,18 @@ const API_KEY = process.env.GRIDLY_API_KEY;
 if (!API_KEY) {
   throw new Error("GRIDLY_API_KEY variable is required!!");
 }
+
+const server = new Server(
+  {
+    name: "gridly-mcp-server",
+    version: "0.1.0",
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
 
 const ProjectIdSchema = z.object({
   projectId: z.number().describe("Please provide the project ID"),
@@ -108,6 +121,35 @@ const CreateColumnSchema = z.object({
   id: z.string().optional().describe("Column ID (Optional)"),
   name: z.string().describe("Please provide the column name"),
   type: typeEnum.describe("Please provide the column type"),
+});
+
+const cellSchema = z.object({
+  columnId: z.string().describe("ID of a column in a view"),
+  value: z.string().describe("Value of a cell"),
+});
+
+const recordSchema = z.object({
+  id: z
+    .string()
+    .optional()
+    .describe("This parameter specify record Id of this record"),
+  path: z
+    .string()
+    .optional()
+    .describe(
+      "This parameter specify path (folder) of this record. Use character / to indicate folder level (e.g Path Level 1/Path Level 2)"
+    ),
+  cells: z.array(cellSchema),
+});
+
+const AddRecordsSchema = z.object({
+  ...ViewIdSchema.shape,
+  records: z.array(recordSchema),
+});
+
+const DeleteRecordsSchema = z.object({
+  ...ViewIdSchema.shape,
+  ids: z.array(z.string()).describe("List of record IDs need to be deleted"),
 });
 
 async function getProjects() {
@@ -336,17 +378,36 @@ async function deleteDependency(args: z.infer<typeof ViewDependencySchema>) {
   }
 }
 
-const server = new Server(
-  {
-    name: "gridly-mcp-server",
-    version: "0.0.1",
-  },
-  {
-    capabilities: {
-      tools: {},
+async function addRecords(args: z.infer<typeof AddRecordsSchema>) {
+  const { viewId, records } = AddRecordsSchema.parse(args);
+  const response = await fetch(`${API_BASE}/views/${viewId}/records`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `ApiKey ${API_KEY}`,
     },
+    body: JSON.stringify(records),
+  });
+  return response.json();
+}
+
+async function deleteRecords(args: z.infer<typeof DeleteRecordsSchema>) {
+  const { viewId, ids } = DeleteRecordsSchema.parse(args);
+
+  const response = await fetch(`${API_BASE}/views/${viewId}/records`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `ApiKey ${API_KEY}`,
+    },
+    body: JSON.stringify({
+      ids: ids,
+    }),
+  });
+  if (response.status === 204) {
+    return true;
   }
-);
+}
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -430,6 +491,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "delete_dependency",
         description: "Delete a dependency",
         inputSchema: zodToJsonSchema(ViewDependencySchema),
+      },
+      {
+        name: "add_records",
+        description: "Add new records to a view",
+        inputSchema: zodToJsonSchema(AddRecordsSchema),
+      },
+      {
+        name: "delete_records",
+        description: "Delete existing records of a view",
+        inputSchema: zodToJsonSchema(DeleteRecordsSchema),
       },
     ],
   };
@@ -616,6 +687,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "add_records": {
+        const args = AddRecordsSchema.parse(request.params.arguments);
+        const records = await addRecords(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(records, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "delete_records": {
+        const args = DeleteRecordsSchema.parse(request.params.arguments);
+        const success = await deleteRecords(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: success
+                ? "Record(s) successfully deleted."
+                : "Failed to delete record(s).",
+            },
+          ],
+        };
+      }
+
       default:
         throw new Error(`Unknown tool: ${request.params.name}`);
     }
@@ -630,6 +729,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function runServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  console.error("Gridly MCP Server running on stdio");
 }
 
 runServer().catch((error) => {
