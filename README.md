@@ -1,9 +1,8 @@
 # Gridly MCP Server
 MCP Server for Gridly API offers functionality for managing projects, grids, databases, and more.
 ## Requirements
-1. Install [Nodejs](https://nodejs.org/en) (version 18 or higher)
-2. Install [Claude Desktop](https://claude.ai/download)
-3. Obtain Gridly API Key
+1. Install [Claude Desktop](https://claude.ai/download) or any MCP Client that supports an MCP Server
+2. Obtain Gridly API Key
 ## Installation
 ### Method 1: Using npx (Recommended)
 1. Open Claude Desktop app > Settings > Developer > Edit Config
