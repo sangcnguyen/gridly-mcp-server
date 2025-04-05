@@ -26,74 +26,84 @@ const server = new Server(
   }
 );
 
-const ProjectIdSchema = z.object({
+const projectIdSchema = z.object({
   projectId: z.number().describe("Please provide the project ID"),
 });
 
-const OptionalProjectIdSchema = z.object({
+const optionalProjectIdSchema = z.object({
   projectId: z
     .number()
     .optional()
     .describe("Please provide the project ID (optional)"),
 });
 
-const DatabaseIdSchema = z.object({
+const databaseIdSchema = z.object({
   databaseId: z.string().describe("Please provide the database ID"),
 });
 
-const GridIdSchema = z.object({
+const gridIdSchema = z.object({
   gridId: z.string().describe("Please provide the grid ID"),
 });
 
-const GridMetadataSchema = z.object({
+const gridMetadataSchema = z.object({
   metadata: z
     .record(z.any())
     .optional()
-    .describe("Please provide the metadata (Optional)"),
+    .describe(
+      "Metadata object containing properties of the grid. Passing null into value will remove that key-value property (Optional)"
+    ),
 });
 
-const ColumnIdSchema = z.object({
+const columnIdSchema = z.object({
   columnId: z.string().describe("Please provide the column ID"),
 });
 
-const ColumnSchema = z.object({
+const columnSchema = z.object({
   id: z.string().describe("Column ID"),
   editable: z.boolean().describe("Enable editable for this column"),
 });
 
-const ViewIdSchema = z.object({
-  viewId: z.string().describe("Please provide the view ID"),
+const viewIdSchema = z.object({
+  viewId: z
+    .string()
+    .describe(
+      "ID of the view. It can be found in the API quick start right panel of your Gridly Dashboard"
+    ),
 });
 
-const DependencyIdSchema = z.object({
+const recordIdSchema = z.object({
+  recordId: z.string().describe("Id of the record to getting history"),
+});
+
+const dependencyIdSchema = z.object({
   dependencyId: z.string().describe("Please provide the dependency ID"),
 });
 
-const ViewColumnSchema = ViewIdSchema.merge(ColumnIdSchema);
+const viewColumnSchema = viewIdSchema.merge(columnIdSchema);
 
-const ViewDependencySchema = ViewIdSchema.merge(DependencyIdSchema);
+const viewDependencySchema = viewIdSchema.merge(dependencyIdSchema);
 
-const CreateGridSchema = z.object({
-  ...DatabaseIdSchema.shape,
+const createGridSchema = z.object({
+  ...databaseIdSchema.shape,
   name: z.string().describe("Please provide the grid name"),
   templateGridId: z
     .string()
     .optional()
     .describe("Please provide the template grid ID (Optional)"),
-  ...GridMetadataSchema.shape,
+  ...gridMetadataSchema.shape,
 });
 
-const UpdateGridSchema = z.object({
-  ...GridIdSchema.shape,
+const updateGridSchema = z.object({
+  ...gridIdSchema.shape,
   name: z.string().describe("Please provide the grid name"),
-  ...GridMetadataSchema.shape,
+  ...gridMetadataSchema.shape,
 });
 
-const CreateViewSchema = z.object({
-  name: z.string().describe("Please provide the view name"),
-  ...GridIdSchema.shape,
+const createViewSchema = z.object({
+  name: z.string().describe("View name"),
+  ...gridIdSchema.shape,
   columns: z
-    .array(ColumnSchema)
+    .array(columnSchema)
     .optional()
     .describe("List of columns (Optional)"),
 });
@@ -116,8 +126,8 @@ const typeEnum = z.enum([
   "yaml",
 ]);
 
-const CreateColumnSchema = z.object({
-  ...ViewIdSchema.shape,
+const createColumnSchema = z.object({
+  ...viewIdSchema.shape,
   id: z.string().optional().describe("Column ID (Optional)"),
   name: z.string().describe("Please provide the column name"),
   type: typeEnum.describe("Please provide the column type"),
@@ -142,14 +152,40 @@ const recordSchema = z.object({
   cells: z.array(cellSchema),
 });
 
-const AddRecordsSchema = z.object({
-  ...ViewIdSchema.shape,
+const addRecordsSchema = z.object({
+  ...viewIdSchema.shape,
   records: z.array(recordSchema),
 });
 
-const DeleteRecordsSchema = z.object({
-  ...ViewIdSchema.shape,
+const deleteRecordsSchema = z.object({
+  ...viewIdSchema.shape,
   ids: z.array(z.string()).describe("List of record IDs need to be deleted"),
+});
+
+const pageSchema = z.object({
+  offset: z.number(),
+  limit: z.number(),
+});
+
+const sortSchema = z.record(
+  z.string().describe("The ID of the column to be sorted"),
+  z.enum(["asc", "desc"])
+);
+
+const listRecordsSchema = z.object({
+  ...viewIdSchema.shape,
+  columnIds: z
+    .array(z.string())
+    .optional()
+    .describe("Specify data of what columns of view to include in response"),
+  page: pageSchema.optional().describe("Starting index and number of records"),
+  sort: sortSchema.optional().describe("Order of records"),
+});
+
+const getRecordHistorySchema = z.object({
+  ...viewIdSchema.shape,
+  ...recordIdSchema.shape,
+  page: pageSchema.optional(),
 });
 
 async function getProjects() {
@@ -213,8 +249,8 @@ async function getGrid(id: string) {
   return response.json();
 }
 
-async function createGrid(args: z.infer<typeof CreateGridSchema>) {
-  const { databaseId, name } = CreateGridSchema.parse(args);
+async function createGrid(args: z.infer<typeof createGridSchema>) {
+  const { databaseId, name } = createGridSchema.parse(args);
   const response = await fetch(`${API_BASE}/grids?dbId=${databaseId}`, {
     method: "POST",
     headers: {
@@ -228,8 +264,8 @@ async function createGrid(args: z.infer<typeof CreateGridSchema>) {
   return response.json();
 }
 
-async function updateGrid(args: z.infer<typeof UpdateGridSchema>) {
-  const { gridId, name, metadata } = UpdateGridSchema.parse(args);
+async function updateGrid(args: z.infer<typeof updateGridSchema>) {
+  const { gridId, name, metadata } = updateGridSchema.parse(args);
   const response = await fetch(`${API_BASE}/grids/${gridId}`, {
     method: "PATCH",
     headers: {
@@ -268,8 +304,8 @@ async function getView(id: string) {
   return response.json();
 }
 
-async function createView(args: z.infer<typeof CreateViewSchema>) {
-  const { name, gridId, columns } = CreateViewSchema.parse(args);
+async function createView(args: z.infer<typeof createViewSchema>) {
+  const { name, gridId, columns } = createViewSchema.parse(args);
   const response = await fetch(`${API_BASE}/views`, {
     method: "POST",
     headers: {
@@ -285,8 +321,8 @@ async function createView(args: z.infer<typeof CreateViewSchema>) {
   return response.json();
 }
 
-async function getColumn(args: z.infer<typeof ViewColumnSchema>) {
-  const { viewId, columnId } = ViewColumnSchema.parse(args);
+async function getColumn(args: z.infer<typeof viewColumnSchema>) {
+  const { viewId, columnId } = viewColumnSchema.parse(args);
   const response = await fetch(
     `${API_BASE}/views/${viewId}/columns/${columnId}`,
     {
@@ -300,8 +336,8 @@ async function getColumn(args: z.infer<typeof ViewColumnSchema>) {
   return response.json();
 }
 
-async function createColumn(args: z.infer<typeof CreateColumnSchema>) {
-  const { viewId, name, type } = CreateColumnSchema.parse(args);
+async function createColumn(args: z.infer<typeof createColumnSchema>) {
+  const { viewId, name, type } = createColumnSchema.parse(args);
   const response = await fetch(`${API_BASE}/views/${viewId}/columns`, {
     method: "POST",
     headers: {
@@ -316,8 +352,8 @@ async function createColumn(args: z.infer<typeof CreateColumnSchema>) {
   return response.json();
 }
 
-async function deleteColumn(args: z.infer<typeof ViewColumnSchema>) {
-  const { viewId, columnId } = ViewColumnSchema.parse(args);
+async function deleteColumn(args: z.infer<typeof viewColumnSchema>) {
+  const { viewId, columnId } = viewColumnSchema.parse(args);
 
   const response = await fetch(
     `${API_BASE}/views/${viewId}/columns/${columnId}`,
@@ -345,8 +381,8 @@ async function getDependencies(viewId: string) {
   return response.json();
 }
 
-async function getDependency(args: z.infer<typeof ViewDependencySchema>) {
-  const { viewId, dependencyId } = ViewDependencySchema.parse(args);
+async function getDependency(args: z.infer<typeof viewDependencySchema>) {
+  const { viewId, dependencyId } = viewDependencySchema.parse(args);
   const response = await fetch(
     `${API_BASE}/views/${viewId}/dependencies/${dependencyId}`,
     {
@@ -360,8 +396,8 @@ async function getDependency(args: z.infer<typeof ViewDependencySchema>) {
   return response.json();
 }
 
-async function deleteDependency(args: z.infer<typeof ViewDependencySchema>) {
-  const { viewId, dependencyId } = ViewDependencySchema.parse(args);
+async function deleteDependency(args: z.infer<typeof viewDependencySchema>) {
+  const { viewId, dependencyId } = viewDependencySchema.parse(args);
 
   const response = await fetch(
     `${API_BASE}/views/${viewId}/dependencies/${dependencyId}`,
@@ -378,8 +414,37 @@ async function deleteDependency(args: z.infer<typeof ViewDependencySchema>) {
   }
 }
 
-async function addRecords(args: z.infer<typeof AddRecordsSchema>) {
-  const { viewId, records } = AddRecordsSchema.parse(args);
+async function getRecords(args: z.infer<typeof listRecordsSchema>) {
+  const { viewId, columnIds, page, sort } = listRecordsSchema.parse(args);
+
+  const queryParams: string[] = [];
+  if (columnIds) {
+    queryParams.push(`columnIds=${columnIds}`);
+  }
+  if (page) {
+    queryParams.push(`page=${encodeURIComponent(JSON.stringify(page))}`);
+  }
+  if (sort) {
+    queryParams.push(`sort=${encodeURIComponent(JSON.stringify(sort))}`);
+  }
+
+  const queryString = queryParams.length > 0 ? `?${queryParams.join("&")}` : "";
+
+  const response = await fetch(
+    `${API_BASE}/views/${viewId}/records${queryString}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `ApiKey ${API_KEY}`,
+      },
+    }
+  );
+  return response.json();
+}
+
+async function addRecords(args: z.infer<typeof addRecordsSchema>) {
+  const { viewId, records } = addRecordsSchema.parse(args);
   const response = await fetch(`${API_BASE}/views/${viewId}/records`, {
     method: "POST",
     headers: {
@@ -391,8 +456,8 @@ async function addRecords(args: z.infer<typeof AddRecordsSchema>) {
   return response.json();
 }
 
-async function deleteRecords(args: z.infer<typeof DeleteRecordsSchema>) {
-  const { viewId, ids } = DeleteRecordsSchema.parse(args);
+async function deleteRecords(args: z.infer<typeof deleteRecordsSchema>) {
+  const { viewId, ids } = deleteRecordsSchema.parse(args);
 
   const response = await fetch(`${API_BASE}/views/${viewId}/records`, {
     method: "DELETE",
@@ -409,6 +474,24 @@ async function deleteRecords(args: z.infer<typeof DeleteRecordsSchema>) {
   }
 }
 
+async function getRecordHistory(args: z.infer<typeof getRecordHistorySchema>) {
+  const { viewId, recordId, page } = getRecordHistorySchema.parse(args);
+  const queryParam = page
+    ? `?page=${encodeURIComponent(JSON.stringify(page))}`
+    : "";
+  const response = await fetch(
+    `${API_BASE}/views/${viewId}/records/${recordId}/histories${queryParam}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `ApiKey ${API_KEY}`,
+      },
+    }
+  );
+  return response.json();
+}
+
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
@@ -420,87 +503,97 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "retrieve_project",
         description: "Retrieve a project",
-        inputSchema: zodToJsonSchema(ProjectIdSchema),
+        inputSchema: zodToJsonSchema(projectIdSchema),
       },
       {
         name: "list_databases",
         description: "List databases in a project",
-        inputSchema: zodToJsonSchema(OptionalProjectIdSchema),
+        inputSchema: zodToJsonSchema(optionalProjectIdSchema),
       },
       {
         name: "retrieve_database",
         description: "Retrieve a database",
-        inputSchema: zodToJsonSchema(DatabaseIdSchema),
+        inputSchema: zodToJsonSchema(databaseIdSchema),
       },
       {
         name: "retrieve_grid",
         description: "Retrieve a grid",
-        inputSchema: zodToJsonSchema(GridIdSchema),
+        inputSchema: zodToJsonSchema(gridIdSchema),
       },
       {
         name: "create_grid",
         description: "Create a grid",
-        inputSchema: zodToJsonSchema(CreateGridSchema),
+        inputSchema: zodToJsonSchema(createGridSchema),
       },
       {
         name: "update_grid",
         description: "Update a grid",
-        inputSchema: zodToJsonSchema(UpdateGridSchema),
+        inputSchema: zodToJsonSchema(updateGridSchema),
       },
       {
         name: "delete_grid",
         description: "Delete a grid",
-        inputSchema: zodToJsonSchema(GridIdSchema),
+        inputSchema: zodToJsonSchema(gridIdSchema),
       },
       {
         name: "retrieve_view",
         description: "Retrieve a view",
-        inputSchema: zodToJsonSchema(ViewIdSchema),
+        inputSchema: zodToJsonSchema(viewIdSchema),
       },
       {
         name: "create_view",
         description: "Create a view",
-        inputSchema: zodToJsonSchema(CreateViewSchema),
+        inputSchema: zodToJsonSchema(createViewSchema),
       },
       {
         name: "retrieve_column",
         description: "Retrieve a column",
-        inputSchema: zodToJsonSchema(ViewColumnSchema),
+        inputSchema: zodToJsonSchema(viewColumnSchema),
       },
       {
         name: "create_column",
         description: "Create a column",
-        inputSchema: zodToJsonSchema(CreateColumnSchema),
+        inputSchema: zodToJsonSchema(createColumnSchema),
       },
       {
         name: "delete_column",
         description: "Delete a column",
-        inputSchema: zodToJsonSchema(ViewColumnSchema),
+        inputSchema: zodToJsonSchema(viewColumnSchema),
       },
       {
         name: "list_dependencies",
         description: "List dependencies",
-        inputSchema: zodToJsonSchema(ViewIdSchema),
+        inputSchema: zodToJsonSchema(viewIdSchema),
       },
       {
         name: "retrieve_dependency",
         description: "Retrieve a dependency",
-        inputSchema: zodToJsonSchema(ViewDependencySchema),
+        inputSchema: zodToJsonSchema(viewDependencySchema),
       },
       {
         name: "delete_dependency",
         description: "Delete a dependency",
-        inputSchema: zodToJsonSchema(ViewDependencySchema),
+        inputSchema: zodToJsonSchema(viewDependencySchema),
       },
       {
         name: "add_records",
         description: "Add new records to a view",
-        inputSchema: zodToJsonSchema(AddRecordsSchema),
+        inputSchema: zodToJsonSchema(addRecordsSchema),
       },
       {
         name: "delete_records",
         description: "Delete existing records of a view",
-        inputSchema: zodToJsonSchema(DeleteRecordsSchema),
+        inputSchema: zodToJsonSchema(deleteRecordsSchema),
+      },
+      {
+        name: "list_records",
+        description: "List records in a view",
+        inputSchema: zodToJsonSchema(listRecordsSchema),
+      },
+      {
+        name: "get_record_history",
+        description: "Get record histories of a record in a view",
+        inputSchema: zodToJsonSchema(getRecordHistorySchema),
       },
     ],
   };
@@ -517,7 +610,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "retrieve_project": {
-        const args = ProjectIdSchema.parse(request.params.arguments);
+        const args = projectIdSchema.parse(request.params.arguments);
         const project = await getProject(args.projectId);
         return {
           content: [{ type: "text", text: JSON.stringify(project, null, 2) }],
@@ -525,7 +618,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "list_databases": {
-        const args = ProjectIdSchema.partial().parse(request.params.arguments);
+        const args = projectIdSchema.partial().parse(request.params.arguments);
         const databases = await getDatabases(args.projectId);
         return {
           content: [
@@ -538,7 +631,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "retrieve_database": {
-        const args = DatabaseIdSchema.parse(request.params.arguments);
+        const args = databaseIdSchema.parse(request.params.arguments);
         const project = await getDatabase(args.databaseId);
         return {
           content: [{ type: "text", text: JSON.stringify(project, null, 2) }],
@@ -546,7 +639,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "retrieve_grid": {
-        const args = GridIdSchema.parse(request.params.arguments);
+        const args = gridIdSchema.parse(request.params.arguments);
         const project = await getGrid(args.gridId);
         return {
           content: [{ type: "text", text: JSON.stringify(project, null, 2) }],
@@ -554,7 +647,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "create_grid": {
-        const args = CreateGridSchema.parse(request.params.arguments);
+        const args = createGridSchema.parse(request.params.arguments);
         const databases = await createGrid(args);
         return {
           content: [
@@ -567,7 +660,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "update_grid": {
-        const args = UpdateGridSchema.parse(request.params.arguments);
+        const args = updateGridSchema.parse(request.params.arguments);
         const databases = await updateGrid(args);
         return {
           content: [
@@ -580,7 +673,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "delete_grid": {
-        const args = GridIdSchema.parse(request.params.arguments);
+        const args = gridIdSchema.parse(request.params.arguments);
         const success = await deleteGrid(args.gridId);
         return {
           content: [
@@ -595,7 +688,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "retrieve_view": {
-        const args = ViewIdSchema.parse(request.params.arguments);
+        const args = viewIdSchema.parse(request.params.arguments);
         const project = await getView(args.viewId);
         return {
           content: [{ type: "text", text: JSON.stringify(project, null, 2) }],
@@ -603,7 +696,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "create_view": {
-        const args = CreateViewSchema.parse(request.params.arguments);
+        const args = createViewSchema.parse(request.params.arguments);
         const databases = await createView(args);
         return {
           content: [
@@ -616,7 +709,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "retrieve_column": {
-        const args = ViewColumnSchema.parse(request.params.arguments);
+        const args = viewColumnSchema.parse(request.params.arguments);
         const project = await getColumn(args);
         return {
           content: [{ type: "text", text: JSON.stringify(project, null, 2) }],
@@ -624,7 +717,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "create_column": {
-        const args = CreateColumnSchema.parse(request.params.arguments);
+        const args = createColumnSchema.parse(request.params.arguments);
         const databases = await createColumn(args);
         return {
           content: [
@@ -637,7 +730,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "delete_column": {
-        const args = ViewColumnSchema.parse(request.params.arguments);
+        const args = viewColumnSchema.parse(request.params.arguments);
         const success = await deleteColumn(args);
         return {
           content: [
@@ -652,7 +745,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "list_dependencies": {
-        const args = ViewIdSchema.parse(request.params.arguments);
+        const args = viewIdSchema.parse(request.params.arguments);
         const databases = await getDependencies(args.viewId);
         return {
           content: [
@@ -665,7 +758,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "retrieve_dependency": {
-        const args = ViewDependencySchema.parse(request.params.arguments);
+        const args = viewDependencySchema.parse(request.params.arguments);
         const project = await getDependency(args);
         return {
           content: [{ type: "text", text: JSON.stringify(project, null, 2) }],
@@ -673,7 +766,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "delete_dependency": {
-        const args = ViewDependencySchema.parse(request.params.arguments);
+        const args = viewDependencySchema.parse(request.params.arguments);
         const success = await deleteDependency(args);
         return {
           content: [
@@ -687,8 +780,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "list_records": {
+        const args = listRecordsSchema.parse(request.params.arguments);
+        const records = await getRecords(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(records, null, 2),
+            },
+          ],
+        };
+      }
+
       case "add_records": {
-        const args = AddRecordsSchema.parse(request.params.arguments);
+        const args = addRecordsSchema.parse(request.params.arguments);
         const records = await addRecords(args);
         return {
           content: [
@@ -701,7 +807,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "delete_records": {
-        const args = DeleteRecordsSchema.parse(request.params.arguments);
+        const args = deleteRecordsSchema.parse(request.params.arguments);
         const success = await deleteRecords(args);
         return {
           content: [
@@ -710,6 +816,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: success
                 ? "Record(s) successfully deleted."
                 : "Failed to delete record(s).",
+            },
+          ],
+        };
+      }
+
+      case "get_record_history": {
+        const args = getRecordHistorySchema.parse(request.params.arguments);
+        const recordHistory = await getRecordHistory(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(recordHistory, null, 2),
             },
           ],
         };

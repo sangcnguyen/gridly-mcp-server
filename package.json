@@ -6,6 +6,7 @@
   "main": "disk/index.js",
   "scripts": {
     "build": "tsc && shx chmod +x disk/*.js",
+    "watch": "tsc --watch",
     "inspector": "npx @modelcontextprotocol/inspector dist/index.js"
   },
   "keywords": [

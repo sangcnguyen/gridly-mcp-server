@@ -67,3 +67,5 @@ MCP Server for Gridly API offers functionality for managing projects, grids, dat
 #### Record
 - `add_records`: Add new records to a view
 - `delete_records`: Delete existing records of a view
+- `list_records`: List records in a view
+- `get_record_history`: Get record histories of a record in a view
