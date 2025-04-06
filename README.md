@@ -1,9 +1,8 @@
 # Gridly MCP Server
 MCP Server for Gridly API offers functionality for managing projects, grids, databases, and more.
 ## Requirements
-1. Install [Nodejs](https://nodejs.org/en) (version 18 or higher)
-2. Install [Claude Desktop](https://claude.ai/download)
-3. Obtain Gridly API Key
+1. Install [Claude Desktop](https://claude.ai/download) or any MCP Client that supports an MCP Server
+2. Obtain Gridly API Key
 ## Installation
 ### Method 1: Using npx (Recommended)
 1. Open Claude Desktop app > Settings > Developer > Edit Config
@@ -61,6 +60,8 @@ MCP Server for Gridly API offers functionality for managing projects, grids, dat
 - `retrieve_column`: Retrieve a column
 - `create_column`: Create a column
 - `delete_column`: Delete a column
+- `add_column_to_view`: Add an existing grid column to a view
+- `remove_column_from_view`: Remove a column from a view
 #### Dependency
 - `list_dependencies`: List dependencies
 - `retrieve_dependency`: Retrieve a dependency
@@ -68,3 +69,5 @@ MCP Server for Gridly API offers functionality for managing projects, grids, dat
 #### Record
 - `add_records`: Add new records to a view
 - `delete_records`: Delete existing records of a view
+- `list_records`: List records in a view
+- `get_record_history`: Get record histories of a record in a view
