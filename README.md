@@ -60,6 +60,8 @@ MCP Server for Gridly API offers functionality for managing projects, grids, dat
 - `retrieve_column`: Retrieve a column
 - `create_column`: Create a column
 - `delete_column`: Delete a column
+- `add_column_to_view`: Add an existing grid column to a view
+- `remove_column_from_view`: Remove a column from a view
 #### Dependency
 - `list_dependencies`: List dependencies
 - `retrieve_dependency`: Retrieve a dependency

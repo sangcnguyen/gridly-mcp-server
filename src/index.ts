@@ -172,6 +172,97 @@ const sortSchema = z.record(
   z.enum(["asc", "desc"])
 );
 
+const allValue = z.any();
+const numberValue = z.number();
+const dateValue = z.string();
+const stringValue = z.string();
+const arrayValue = z.array(z.any());
+const betweenValue = z.tuple([z.any(), z.any()]);
+const regexpValue = z.instanceof(RegExp).or(z.string());
+const emptyCheck = z.literal(true);
+
+const operatorUnionSchema = z
+  .object({
+    "=": allValue,
+  })
+  .or(
+    z.object({
+      "!=": allValue,
+    })
+  )
+  .or(
+    z.object({
+      "<": z.union([numberValue, dateValue]),
+    })
+  )
+  .or(
+    z.object({
+      "<=": z.union([numberValue, dateValue]),
+    })
+  )
+  .or(
+    z.object({
+      ">": z.union([numberValue, dateValue]),
+    })
+  )
+  .or(
+    z.object({
+      ">=": z.union([numberValue, dateValue]),
+    })
+  )
+  .or(
+    z.object({
+      contains: stringValue,
+    })
+  )
+  .or(
+    z.object({
+      startsWith: stringValue,
+    })
+  )
+  .or(
+    z.object({
+      endsWith: stringValue,
+    })
+  )
+  .or(
+    z.object({
+      regexp: regexpValue,
+    })
+  )
+  .or(
+    z.object({
+      notRegexp: regexpValue,
+    })
+  )
+  .or(
+    z.object({
+      in: arrayValue,
+    })
+  )
+  .or(
+    z.object({
+      notIn: arrayValue,
+    })
+  )
+  .or(
+    z.object({
+      between: betweenValue,
+    })
+  )
+  .or(
+    z.object({
+      isEmpty: emptyCheck,
+    })
+  )
+  .or(
+    z.object({
+      isNotEmpty: emptyCheck,
+    })
+  );
+
+const filterSchema = z.record(z.string(), operatorUnionSchema);
+
 const listRecordsSchema = z.object({
   ...viewIdSchema.shape,
   columnIds: z
@@ -179,6 +270,7 @@ const listRecordsSchema = z.object({
     .optional()
     .describe("Specify data of what columns of view to include in response"),
   page: pageSchema.optional().describe("Starting index and number of records"),
+  query: filterSchema.optional().describe("Criteria to filter records"),
   sort: sortSchema.optional().describe("Order of records"),
 });
 
@@ -370,6 +462,40 @@ async function deleteColumn(args: z.infer<typeof viewColumnSchema>) {
   }
 }
 
+async function addColumnToView(args: z.infer<typeof viewColumnSchema>) {
+  const { viewId, columnId } = viewColumnSchema.parse(args);
+
+  const response = await fetch(
+    `${API_BASE}/views/${viewId}/columns/${columnId}/add`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `ApiKey ${API_KEY}`,
+      },
+    }
+  );
+  return response.json();
+}
+
+async function removeColumnFromView(args: z.infer<typeof viewColumnSchema>) {
+  const { viewId, columnId } = viewColumnSchema.parse(args);
+
+  const response = await fetch(
+    `${API_BASE}/views/${viewId}/columns/${columnId}/remove`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `ApiKey ${API_KEY}`,
+      },
+    }
+  );
+  if (response.status === 200) {
+    return true;
+  }
+}
+
 async function getDependencies(viewId: string) {
   const response = await fetch(`${API_BASE}/views/${viewId}/dependencies`, {
     method: "GET",
@@ -415,7 +541,8 @@ async function deleteDependency(args: z.infer<typeof viewDependencySchema>) {
 }
 
 async function getRecords(args: z.infer<typeof listRecordsSchema>) {
-  const { viewId, columnIds, page, sort } = listRecordsSchema.parse(args);
+  const { viewId, columnIds, page, query, sort } =
+    listRecordsSchema.parse(args);
 
   const queryParams: string[] = [];
   if (columnIds) {
@@ -423,6 +550,9 @@ async function getRecords(args: z.infer<typeof listRecordsSchema>) {
   }
   if (page) {
     queryParams.push(`page=${encodeURIComponent(JSON.stringify(page))}`);
+  }
+  if (query) {
+    queryParams.push(`query=${encodeURIComponent(JSON.stringify(query))}`);
   }
   if (sort) {
     queryParams.push(`sort=${encodeURIComponent(JSON.stringify(sort))}`);
@@ -558,6 +688,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "delete_column",
         description: "Delete a column",
+        inputSchema: zodToJsonSchema(viewColumnSchema),
+      },
+      {
+        name: "add_column_to_view",
+        description: "Add an existing grid column to a view",
+        inputSchema: zodToJsonSchema(viewColumnSchema),
+      },
+      {
+        name: "remove_column_from_view",
+        description: "Remove a column from a view",
         inputSchema: zodToJsonSchema(viewColumnSchema),
       },
       {
@@ -739,6 +879,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: success
                 ? "Column successfully deleted."
                 : "Failed to delete column.",
+            },
+          ],
+        };
+      }
+
+      case "add_column_to_view": {
+        const args = viewColumnSchema.parse(request.params.arguments);
+        const column = await addColumnToView(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(column, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "remove_column_from_view": {
+        const args = viewColumnSchema.parse(request.params.arguments);
+        const success = await removeColumnFromView(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: success
+                ? "Column successfully removed from view."
+                : "Failed to remove column from view.",
             },
           ],
         };
