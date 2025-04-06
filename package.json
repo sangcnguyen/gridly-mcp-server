@@ -1,11 +1,11 @@
 {
   "name": "gridly-mcp-server",
-  "version": "0.2.6",
+  "version": "0.3.6",
   "description": "MCP server for Gridly API integration",
   "bugs": "https://github.com/sangcnguyen/gridly-mcp-server/issues",
   "main": "disk/index.js",
   "scripts": {
-    "build": "tsc && shx chmod +x disk/*.js",
+    "build": "tsc && shx chmod +x dist/*.js",
     "watch": "tsc --watch",
     "inspector": "npx @modelcontextprotocol/inspector dist/index.js"
   },
