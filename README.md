@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/sangcnguyen-gridly-mcp-server-badge.png)](https://mseep.ai/app/sangcnguyen-gridly-mcp-server)
+
 # Gridly MCP Server
 MCP Server for Gridly API offers functionality for managing projects, grids, databases, and more.
 ## Requirements
